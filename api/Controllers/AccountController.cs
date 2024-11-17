@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using api.Data;
+using api.Dtos;
+using api.Mappers;
 using api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +22,10 @@ namespace api.Controllers
         }
 
         // [HttpPost("register")]
-        // public async Task<IActionResult> Register([FromBody] Register)
+        // public IActionResult Create([FromBody] UserRegisterDto userRegisterDto) 
+        // {
+        //     var userModel = userRegisterDto.ToUserFromRegisterDto();
+            
+        // }
     }
 }

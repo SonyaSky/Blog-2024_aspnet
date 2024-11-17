@@ -4,22 +4,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using api.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace api.Data
 {
-    public class ApplicationDBContext : DbContext
+    public class ApplicationDBContext : IdentityDbContext
     {
-        public ApplicationDBContext(DbContextOptions dbContextOptions)
-        : base(dbContextOptions)
+        public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options)
+            : base(options)
         {
-            
         }
 
-        public DbSet<User> Users {get; set; }
-        //here write more tables
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<User>().ToTable("User ");
-        }
+        // public DbSet<User> Users {get; set; } = null!;
+        // protected override void OnModelCreating(ModelBuilder modelBuilder)
+        // {
+        //     base.OnModelCreating(modelBuilder);
+        //     modelBuilder.Entity<User>().ToTable("User ");
+        // }
     }
 }
