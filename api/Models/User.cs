@@ -8,11 +8,6 @@ using Microsoft.AspNetCore.Identity;
 
 namespace api.Models
 {
-    public enum Gender
-    {
-        Male,
-        Female
-    }
     public class User : IdentityUser
     {
         public string FullName { get; set; } = string.Empty;

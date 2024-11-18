@@ -14,7 +14,7 @@ namespace api.Data
             : base(options)
         {
         }
-
+        public DbSet<Community> Communities {get; set;} = null!;
         // public DbSet<User> Users {get; set; } = null!;
         // protected override void OnModelCreating(ModelBuilder modelBuilder)
         // {
