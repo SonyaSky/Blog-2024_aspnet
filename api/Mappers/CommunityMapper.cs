@@ -20,5 +20,13 @@ namespace api.Mappers
                 SubscribersCount = community.SubscribersCount
             };
         }
+        public static Community ToCommunityFromCreateDto(this CommunityCreateDto community) 
+        {
+            return new Community{
+                Name = community.Name,
+                Description = community.Description,
+                IsClosed = community.IsClosed,
+            };
+        }
     }
 }
