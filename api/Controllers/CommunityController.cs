@@ -6,6 +6,7 @@ using api.Data;
 using api.Dtos.Community;
 using api.Mappers;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace api.Controllers
 {
@@ -22,6 +23,7 @@ namespace api.Controllers
         }
 
         [HttpGet]
+        [SwaggerOperation(Summary = "Get community list")]
         public IActionResult GetAll() 
         {
             var communities = _context.Communities
@@ -30,6 +32,7 @@ namespace api.Controllers
         }
 
         [HttpGet("{id}")]
+        [SwaggerOperation(Summary = "Get information about community")]
         public IActionResult GetById([FromRoute] Guid id)
         {
             var community = _context.Communities.Find(id);

@@ -22,7 +22,7 @@ namespace api.Controllers
         }
 
         [HttpGet]
-        [SwaggerOperation(Summary = "Get tag list", Description = "Retrieves a list of all tags.")]
+        [SwaggerOperation(Summary = "Get tag list")]
         public IActionResult GetAll() 
         {
             var tags = _context.Tags
