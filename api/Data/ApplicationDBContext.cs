@@ -15,6 +15,8 @@ namespace api.Data
         {
         }
         public DbSet<Community> Communities {get; set;} = null!;
+        public DbSet<Tag> Tags {get; set; } = null!;
+
         // public DbSet<User> Users {get; set; } = null!;
         // protected override void OnModelCreating(ModelBuilder modelBuilder)
         // {
