@@ -30,23 +30,23 @@ namespace api.Controllers
             return Ok(tags);
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetById([FromRoute] Guid id)
-        {
-            var tag = _context.Tags.Find(id);
-            if (tag == null) {
-                return NotFound();
-            }
-            return Ok(tag);
-        }
+        // [HttpGet("{id}")]
+        // public IActionResult GetById([FromRoute] Guid id)
+        // {
+        //     var tag = _context.Tags.Find(id);
+        //     if (tag == null) {
+        //         return NotFound();
+        //     }
+        //     return Ok(tag);
+        // }
 
-        [HttpPost]
-        public IActionResult Create([FromBody] TagRegisterDto tag)
-        {
-            var tagModel = tag.ToTagFromRegisterDto();
-            _context.Tags.Add(tagModel);
-            _context.SaveChanges();
-            return CreatedAtAction(nameof(GetById), new { id = tagModel.Id }, tagModel);
-        }
+        // [HttpPost]
+        // public IActionResult Create([FromBody] TagRegisterDto tag)
+        // {
+        //     var tagModel = tag.ToTagFromRegisterDto();
+        //     _context.Tags.Add(tagModel);
+        //     _context.SaveChanges();
+        //     return CreatedAtAction(nameof(GetById), new { id = tagModel.Id }, tagModel);
+        // }
     }
 }
