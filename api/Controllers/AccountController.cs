@@ -4,12 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using api.Data;
 using api.Dtos;
+using api.Dtos.User;
 using api.Interfaces;
 using api.Mappers;
 using api.Models;
 using api.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace api.Controllers
@@ -20,11 +22,13 @@ namespace api.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
-        [ActivatorUtilitiesConstructor]
-        public AccountController(UserManager<User> userManager, ITokenService tokenService)
+        private readonly SignInManager<User> _signInManager;
+        [ActivatorUtilitiesConstructorAttribute]
+        public AccountController(UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
+            _signInManager = signInManager;
         }
 
         [HttpPost("register")]
@@ -32,6 +36,11 @@ namespace api.Controllers
             try 
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
+                var existingUser  = await _userManager.FindByEmailAsync(registerDto.Email);
+                if (existingUser  != null)
+                {
+                    return BadRequest($"Email '{registerDto.Email}' is already taken.");
+                }
 
                 var user = new User 
                 {
@@ -72,23 +81,25 @@ namespace api.Controllers
             }
         }
 
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginCredentials loginCredentials)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            var user = await _userManager.Users.FirstOrDefaultAsync(x => x.Email == loginCredentials.Email);
+            if (user == null) {
+                return Unauthorized("Login failed");
+            }
+            var result = await _signInManager.CheckPasswordSignInAsync(user, loginCredentials.Password, false);
+            if (!result.Succeeded) return Unauthorized("Login failed");
 
-        // [HttpGet]
-        // [SwaggerOperation(Summary = "Get tag list")]
-        // public IActionResult GetAll() 
-        // {
-        //     var tags = _context.Tags
-        //     .Select(t => t.ToTagDto()).ToList();
-        //     return Ok(tags);
-        // }
-// {
-//   "fullName": "SecondUser",
-//   "password": "P@ssword2",
-//   "email": "user2@example.com",
-//   "birthDate": "2024-11-20T08:12:15.707Z",
-//   "gender": "Female",
-//   "phoneNumber": "+7 (222) 222-22-22"
-// }
+            return Ok(
+                new TokenResponse
+                {
+                    Token = _tokenService.CreateToken(user)
+                }
+            );
+        }
+
     }
 }
