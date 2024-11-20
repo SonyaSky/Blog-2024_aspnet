@@ -11,9 +11,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Text.Json.Serialization;
+using api.Interfaces;
+using api.Service;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -53,6 +57,7 @@ builder.Services.AddAuthentication(options => {
         )
     };
 });
+
 
 var app = builder.Build();
 

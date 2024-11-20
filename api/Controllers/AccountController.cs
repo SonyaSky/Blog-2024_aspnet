@@ -4,10 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using api.Data;
 using api.Dtos;
+using api.Interfaces;
 using api.Mappers;
 using api.Models;
+using api.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace api.Controllers
 {
@@ -16,9 +19,12 @@ namespace api.Controllers
     public class AccountController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        public AccountController(UserManager<User> userManager)
+        private readonly ITokenService _tokenService;
+        [ActivatorUtilitiesConstructor]
+        public AccountController(UserManager<User> userManager, ITokenService tokenService)
         {
             _userManager = userManager;
+            _tokenService = tokenService;
         }
 
         [HttpPost("register")]
@@ -34,7 +40,7 @@ namespace api.Controllers
                     Password = registerDto.Password,
                     Email = registerDto.Email,
                     BirthDate = registerDto.BirthDate,
-                    Gender = registerDto.Gender,
+                    Gender = registerDto.Gender, 
                     PhoneNumber = registerDto.PhoneNumber
                 };
                 var createdUser = await _userManager.CreateAsync(user, registerDto.Password);
@@ -43,7 +49,12 @@ namespace api.Controllers
                     var roleResult = await _userManager.AddToRoleAsync(user, "User");
                     if (roleResult.Succeeded)
                     {
-                        return Ok("User created");
+                        return Ok(
+                            new TokenResponse
+                            {
+                                Token = _tokenService.CreateToken(user)
+                            }
+                        );
                     } 
                     else 
                     {
@@ -63,10 +74,21 @@ namespace api.Controllers
 
 
 
-        // public IActionResult Create([FromBody] UserRegisterDto userRegisterDto) 
+        // [HttpGet]
+        // [SwaggerOperation(Summary = "Get tag list")]
+        // public IActionResult GetAll() 
         // {
-        //     var userModel = userRegisterDto.ToUserFromRegisterDto();
-            
+        //     var tags = _context.Tags
+        //     .Select(t => t.ToTagDto()).ToList();
+        //     return Ok(tags);
         // }
+// {
+//   "fullName": "SecondUser",
+//   "password": "P@ssword2",
+//   "email": "user2@example.com",
+//   "birthDate": "2024-11-20T08:12:15.707Z",
+//   "gender": "Female",
+//   "phoneNumber": "+7 (222) 222-22-22"
+// }
     }
 }
