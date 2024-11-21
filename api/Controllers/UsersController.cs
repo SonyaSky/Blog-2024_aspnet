@@ -21,13 +21,14 @@ namespace api.Controllers
 {
     [Route("api/account")]
     [ApiController]
-    public class AccountController : ControllerBase
+    
+    public class UsersController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
         private readonly SignInManager<User> _signInManager;
         [ActivatorUtilitiesConstructorAttribute]
-        public AccountController(UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
+        public UsersController(UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
@@ -35,6 +36,7 @@ namespace api.Controllers
         }
 
         [HttpPost("register")]
+        [SwaggerOperation(Summary = "Register new user", Description = "a")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto) {
             try 
@@ -87,6 +89,7 @@ namespace api.Controllers
 
         [HttpPost("login")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Login to the system")]
         public async Task<IActionResult> Login(LoginCredentials loginCredentials)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -123,39 +126,54 @@ namespace api.Controllers
 
         [HttpGet("profile")]
         [Authorize]
+        [SwaggerOperation(Summary = "Get user profile")]
         public async Task<IActionResult> GetProfile()
         {
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
-            // var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            // Console.WriteLine(ClaimTypes.NameIdentifier);
-            // if (userId == null)
-            // {
-            //     return NotFound("User  not found.");
-            // }
-
-            // // Find the user by ID
-            // var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                return NotFound("User not found.");
+                return Unauthorized();
             }
-
-            // var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            // if (userId == null)
-            // {
-            //     return Unauthorized();
-            // }
-
-            // var user = await _userManager.FindByIdAsync(userId);
-            // if (user == null)
-            // {
-            //     return Unauthorized();
-            // }
-
-
             return Ok(user.ToUserDto());
         } 
+
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<IActionResult> EditProfile([FromBody] UserEditDto userEditDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            if (user.Email != userEditDto.Email)
+            {
+                var existingUser  = await _userManager.FindByEmailAsync(userEditDto.Email);
+                if (existingUser  != null)
+                {
+                    return BadRequest($"Email '{userEditDto.Email}' is already taken.");
+                }
+            }
+            
+            user.Email = userEditDto.Email;
+            user.UserName = userEditDto.Email;
+            user.FullName = userEditDto.FullName;
+            user.BirthDate = userEditDto.BirthDate;
+            user.Gender = userEditDto.Gender;
+            user.PhoneNumber = userEditDto.PhoneNumber;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return Ok();
+
+        }
 
     }
 }
