@@ -18,6 +18,7 @@ namespace api.Data
         }
         public DbSet<Models.Community> Communities {get; set;} = null!;
         public DbSet<Models.Tag> Tags {get; set; } = null!;
+        public DbSet<Author> Authors {get; set; } = null!;
 
 
         // public DbSet<User> Users {get; set; } = null!;
@@ -38,6 +39,13 @@ namespace api.Data
                 },
             };
             builder.Entity<IdentityRole>().HasData(roles);
+            builder.Entity<Author>()
+                .HasKey(a => a.UserId);
+
+            builder.Entity<Author>()
+                .HasOne(a => a.User)
+                .WithOne(u => u.Author)
+                .HasForeignKey<Author>(a => a.UserId);
         }
     }
 }

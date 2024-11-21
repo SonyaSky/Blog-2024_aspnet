@@ -154,7 +154,13 @@ namespace api.Controllers
                 var existingUser  = await _userManager.FindByEmailAsync(userEditDto.Email);
                 if (existingUser  != null)
                 {
-                    return BadRequest($"Email '{userEditDto.Email}' is already taken.");
+                    return BadRequest(
+                        new Response
+                        {
+                            Status = null,
+                            Message = $"Email '{userEditDto.Email}' is already taken."
+                        }
+                    );
                 }
             }
             
