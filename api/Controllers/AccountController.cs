@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using api.Data;
 using api.Dtos;
 using api.Dtos.User;
+using api.Extensions;
 using api.Interfaces;
 using api.Mappers;
 using api.Models;
 using api.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +35,7 @@ namespace api.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto) {
             try 
             {
@@ -44,7 +48,7 @@ namespace api.Controllers
 
                 var user = new User 
                 {
-                    UserName = registerDto.FullName,
+                    UserName = registerDto.Email,
                     FullName = registerDto.FullName,
                     Password = registerDto.Password,
                     Email = registerDto.Email,
@@ -82,16 +86,32 @@ namespace api.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login(LoginCredentials loginCredentials)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var user = await _userManager.Users.FirstOrDefaultAsync(x => x.Email == loginCredentials.Email);
             if (user == null) {
-                return Unauthorized("Login failed");
+                return Unauthorized(
+                    new Response
+                    {
+                        Status = null,
+                        Message = "Login failed"
+                    }
+                );
             }
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginCredentials.Password, false);
-            if (!result.Succeeded) return Unauthorized("Login failed");
+            if (!result.Succeeded) 
+            {
+                return Unauthorized(
+                    new Response
+                    {
+                        Status = null,
+                        Message = "Login failed"
+                    }
+                );
+            }
 
             return Ok(
                 new TokenResponse
@@ -100,6 +120,42 @@ namespace api.Controllers
                 }
             );
         }
+
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<IActionResult> GetProfile()
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            // var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Console.WriteLine(ClaimTypes.NameIdentifier);
+            // if (userId == null)
+            // {
+            //     return NotFound("User  not found.");
+            // }
+
+            // // Find the user by ID
+            // var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // if (userId == null)
+            // {
+            //     return Unauthorized();
+            // }
+
+            // var user = await _userManager.FindByIdAsync(userId);
+            // if (user == null)
+            // {
+            //     return Unauthorized();
+            // }
+
+
+            return Ok(user.ToUserDto());
+        } 
 
     }
 }

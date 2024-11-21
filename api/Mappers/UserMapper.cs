@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using api.Dtos;
+using api.Dtos.User;
 using api.Models;
 
 namespace api.Mappers
@@ -14,11 +15,25 @@ namespace api.Mappers
             return new User{
                 FullName = userRegisterDto.FullName,
                 Password = userRegisterDto.Password,
-                Email = userRegisterDto.Password,
+                Email = userRegisterDto.Email,
                 BirthDate = userRegisterDto.BirthDate,
                 Gender = userRegisterDto.Gender,
                 PhoneNumber = userRegisterDto.PhoneNumber
             };
+        }
+
+        public static UserDto ToUserDto(this User user) 
+        {
+            return new UserDto{
+                Id = new Guid(user.Id),
+                FullName = user.FullName,
+                CreateTime = user.CreateTime,
+                Email = user.Email,
+                BirthDate = user.BirthDate,
+                Gender = user.Gender,
+                PhoneNumber = user.PhoneNumber
+            };
+            
         }
     }
 }
