@@ -15,6 +15,7 @@ namespace api.Models
         [Required]
         [MinLength(1, ErrorMessage = "The Name field is required.")]
         public string Name { get; set; } = string.Empty;
+        public List<PostTag> PostTags { get; set; } = new List<PostTag>();
 
         public Tag()
         {

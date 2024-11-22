@@ -19,6 +19,8 @@ namespace api.Data
         public DbSet<Models.Community> Communities {get; set;} = null!;
         public DbSet<Models.Tag> Tags {get; set; } = null!;
         public DbSet<Author> Authors {get; set; } = null!;
+        public DbSet<Post> Posts {get; set; } = null!;
+        public DbSet<PostTag> PostTags {get; set; } = null!;
 
 
         // public DbSet<User> Users {get; set; } = null!;
@@ -46,6 +48,19 @@ namespace api.Data
                 .HasOne(a => a.User)
                 .WithOne(u => u.Author)
                 .HasForeignKey<Author>(a => a.UserId);
+
+            builder.Entity<PostTag>(x => x.HasKey(p => new {p.PostId, p.TagId}));
+            
+            builder.Entity<PostTag>()
+                .HasOne(u => u.Post)
+                .WithMany(u => u.PostTags)
+                .HasForeignKey(p => p.PostId);
+
+            builder.Entity<PostTag>()
+                .HasOne(u => u.Tag)
+                .WithMany(u => u.PostTags)
+                .HasForeignKey(p => p.TagId);
+
         }
     }
 }
