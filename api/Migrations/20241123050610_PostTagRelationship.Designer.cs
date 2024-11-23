@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using api.Data;
 
@@ -11,9 +12,11 @@ using api.Data;
 namespace api.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241123050610_PostTagRelationship")]
+    partial class PostTagRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,13 +54,13 @@ namespace api.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "263c8816-80e6-4964-8ece-3da187dcf2da",
+                            Id = "9ae353d4-b548-4ffa-9f68-3a765eac38c6",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "8a41be6f-bb4a-4b31-b167-5cb32c17bfe7",
+                            Id = "4f81ecfc-fc45-4e64-a6a8-cea2bae331ed",
                             Name = "User",
                             NormalizedName = "USER"
                         });
@@ -248,7 +251,7 @@ namespace api.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime?>("BirthDate")
+                    b.Property<DateTime>("BirthDate")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("Created")
@@ -306,7 +309,7 @@ namespace api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AddressId")
+                    b.Property<Guid>("AddressId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Author")
@@ -319,10 +322,11 @@ namespace api.Migrations
                     b.Property<int>("CommentsCount")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("CommunityId")
+                    b.Property<Guid>("CommunityId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CommunityName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreateTime")

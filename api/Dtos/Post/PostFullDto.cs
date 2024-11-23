@@ -26,11 +26,8 @@ namespace api.Dtos.Post
         [Required]
         [MinLength(1, ErrorMessage = "The Author field is required.")]
         public string Author { get; set; } = string.Empty;
-        [Required]
-        public Guid CommunityId { get; set; }
-        [Required]
-        [MinLength(1, ErrorMessage = "The CommunityName field is required.")]
-        public string CommunityName { get; set; } = string.Empty;
+        public Guid? CommunityId { get; set; }
+        public string? CommunityName { get; set; } = string.Empty;
         public Guid AddressId { get; set; }
         [Required]
         public int Likes { get; set; } = 0;

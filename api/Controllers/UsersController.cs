@@ -45,19 +45,16 @@ namespace api.Controllers
                 var existingUser  = await _userManager.FindByEmailAsync(registerDto.Email);
                 if (existingUser  != null)
                 {
-                    return BadRequest($"Email '{registerDto.Email}' is already taken.");
+                    return BadRequest(
+                        new Response
+                        {
+                            Status = "Error",
+                            Message = $"Email '{registerDto.Email}' is already taken."
+                        }
+                    );
                 }
 
-                var user = new User 
-                {
-                    UserName = registerDto.Email,
-                    FullName = registerDto.FullName,
-                    Password = registerDto.Password,
-                    Email = registerDto.Email,
-                    BirthDate = registerDto.BirthDate,
-                    Gender = registerDto.Gender, 
-                    PhoneNumber = registerDto.PhoneNumber
-                };
+                var user = registerDto.ToUserFromRegisterDto();
                 var createdUser = await _userManager.CreateAsync(user, registerDto.Password);
                 if (createdUser.Succeeded)
                 {
@@ -96,7 +93,7 @@ namespace api.Controllers
 
             var user = await _userManager.Users.FirstOrDefaultAsync(x => x.Email == loginCredentials.Email);
             if (user == null) {
-                return Unauthorized(
+                return BadRequest(
                     new Response
                     {
                         Status = null,
@@ -107,7 +104,7 @@ namespace api.Controllers
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginCredentials.Password, false);
             if (!result.Succeeded) 
             {
-                return Unauthorized(
+                return BadRequest(
                     new Response
                     {
                         Status = null,

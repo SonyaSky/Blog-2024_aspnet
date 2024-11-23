@@ -12,7 +12,7 @@ namespace api.Dtos
         [Required]
         [MinLength(1, ErrorMessage = "The FullName field is required.")]
         public string FullName { get; set; } = string.Empty;
-        public DateTime BirthDate { get; set; }
+        public DateTime? BirthDate { get; set; }
         [Required]
         public Gender Gender { get; set; }
         public int Posts { get; set; }

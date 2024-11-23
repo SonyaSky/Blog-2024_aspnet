@@ -18,6 +18,7 @@ namespace api.Mappers
                 Title = post.Title,
                 Description = post.Description,
                 ReadingTime = post.ReadingTime,
+                Image = post.Image,
                 AuthorId = post.AuthorId,
                 Author = post.Author,
                 CommunityId = post.CommunityId,
@@ -28,5 +29,6 @@ namespace api.Mappers
                 CommentsCount = post.CommentsCount
             };
         }
+
     }
 }

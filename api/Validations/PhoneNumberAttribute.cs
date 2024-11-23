@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
-namespace api.Models
+namespace api.Validations
 {
     public class PhoneNumberAttribute : ValidationAttribute
     {
