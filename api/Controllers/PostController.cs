@@ -29,14 +29,16 @@ namespace api.Controllers
 
         [HttpGet]
         [SwaggerOperation(Summary = "Get list of available posts")]
-        public IActionResult GetAll() 
+        public async Task<IActionResult> GetAll() 
         {
-            var posts = _context.Posts.ToList();
+            var posts = await _context.Posts.ToListAsync();
 
             var postDtos = new List<PostDto>();
             foreach (var post in posts)
             {
-                postDtos.Add(MakePost(post));
+                var newPost = MakePost(post);
+                newPost.HasLike = await CheckForLike(post.Id);
+                postDtos.Add(newPost);
             }
 
             return Ok(postDtos);
@@ -119,7 +121,7 @@ namespace api.Controllers
         [SwaggerOperation(Summary = "Get information about a specific post")]
         public async Task<IActionResult> GetOnePost([FromRoute] Guid id)
         {
-            var post = _context.Posts.Find(id);
+            var post = await _context.Posts.FindAsync(id);
             if (post == null)
             {
                 return NotFound(
@@ -131,12 +133,90 @@ namespace api.Controllers
                 );
             }
             var newPost = post.ToPostFullDto();
-            var tags = _context.PostTags
+            var tags = await _context.PostTags
                 .Where(t => t.PostId == id)
                 .Select(t => t.Tag.ToTagDto())
-                .ToList();
+                .ToListAsync();
             newPost.Tags = tags;
+            newPost.HasLike = await CheckForLike(post.Id);
             return Ok(newPost);
+        }
+
+
+        [HttpPost("{postId}/like")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Add like to a specific post")]
+        public async Task<IActionResult> AddLike([FromRoute] Guid postId)
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var post = _context.Posts.Find(postId);
+            if (post == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Post with id={postId} was not found in the database"
+                    }
+                );
+            }
+            var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
+            if (like != null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = "Like on this post is already set by this user"
+                    }
+                );
+            }
+            var likeModel = new Like
+            {
+                PostId = postId,
+                UserId = user.Id
+            };
+            await CreateLikeAsync(likeModel);
+            if (likeModel == null)
+            {
+                return StatusCode(500, "Could not create post");
+            }
+            return Created();
+
+        }
+        private async Task<Like> CreateLikeAsync(Like like)
+        {
+            await _context.Likes.AddAsync(like);
+            await _context.SaveChangesAsync();
+            return like;
+        }
+
+        private async Task<bool> CheckForLike(Guid postId)
+        {
+
+            if (User.Identity.IsAuthenticated)
+            {
+                var username = User.GetUsername();
+                if (!string.IsNullOrEmpty(username))
+                {
+                    var user = await _userManager.FindByNameAsync(username);
+                    if (user != null)
+                    {
+                        var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
+                        if (like != null)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+            return false;
         }
 
         private async Task<Tag?> GetTagAsync(Guid id)

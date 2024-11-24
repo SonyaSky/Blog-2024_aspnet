@@ -21,6 +21,7 @@ namespace api.Data
         public DbSet<Author> Authors {get; set; } = null!;
         public DbSet<Post> Posts {get; set; } = null!;
         public DbSet<PostTag> PostTags {get; set; } = null!;
+        public DbSet<Like> Likes {get; set; } = null!;
 
 
         // public DbSet<User> Users {get; set; } = null!;
@@ -60,6 +61,18 @@ namespace api.Data
                 .HasOne(u => u.Tag)
                 .WithMany(u => u.PostTags)
                 .HasForeignKey(p => p.TagId);
+
+            builder.Entity<Like>(x => x.HasKey(p => new {p.PostId, p.UserId}));
+            
+            builder.Entity<Like>()
+                .HasOne(u => u.Post)
+                .WithMany(u => u.LikedBy)
+                .HasForeignKey(p => p.PostId);
+
+            builder.Entity<Like>()
+                .HasOne(u => u.User)
+                .WithMany(u => u.Likes)
+                .HasForeignKey(p => p.UserId);
 
         }
     }

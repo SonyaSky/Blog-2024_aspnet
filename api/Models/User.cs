@@ -16,6 +16,7 @@ namespace api.Models
         public Gender Gender { get; set; }
         public DateTime CreateTime{ get; set; } 
         public Author? Author { get; set; }
+        public List<Like>? Likes { get; set; } = new List<Like>();
 
         public User()
         {
