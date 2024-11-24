@@ -31,9 +31,26 @@ namespace api.Controllers
         [SwaggerOperation(Summary = "Get list of available posts")]
         public IActionResult GetAll() 
         {
-            var posts = _context.Posts
-            .Select(p => p.ToPostDto()).ToList();
-            return Ok(posts);
+            var posts = _context.Posts.ToList();
+
+            var postDtos = new List<PostDto>();
+            foreach (var post in posts)
+            {
+                postDtos.Add(MakePost(post));
+            }
+
+            return Ok(postDtos);
+        }
+
+        private PostDto MakePost(Post post)
+        {
+            var newPost = post.ToPostDto();
+            var tags = _context.PostTags
+                .Where(t => t.PostId == post.Id)
+                .Select(t => t.Tag.ToTagDto())
+                .ToList();
+            newPost.Tags = tags;
+            return newPost;
         }
 
         [HttpPost]
