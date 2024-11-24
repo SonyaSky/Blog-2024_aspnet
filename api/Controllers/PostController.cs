@@ -115,6 +115,30 @@ namespace api.Controllers
            }
         }
 
+        [HttpGet("{id}")]
+        [SwaggerOperation(Summary = "Get information about a specific post")]
+        public async Task<IActionResult> GetOnePost([FromRoute] Guid id)
+        {
+            var post = _context.Posts.Find(id);
+            if (post == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Post with id={id} was not found in the database"
+                    }
+                );
+            }
+            var newPost = post.ToPostFullDto();
+            var tags = _context.PostTags
+                .Where(t => t.PostId == id)
+                .Select(t => t.Tag.ToTagDto())
+                .ToList();
+            newPost.Tags = tags;
+            return Ok(newPost);
+        }
+
         private async Task<Tag?> GetTagAsync(Guid id)
         {
             return await _context.Tags.FirstOrDefaultAsync(t => t.Id == id);

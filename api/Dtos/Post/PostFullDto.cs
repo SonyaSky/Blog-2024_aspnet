@@ -28,15 +28,15 @@ namespace api.Dtos.Post
         public string Author { get; set; } = string.Empty;
         public Guid? CommunityId { get; set; }
         public string? CommunityName { get; set; } = string.Empty;
-        public Guid AddressId { get; set; }
+        public Guid? AddressId { get; set; }
         [Required]
         public int Likes { get; set; } = 0;
         [Required]
         public bool HasLike { get; set; } = false;
         [Required]
         public int CommentsCount { get; set; }
-        public List<TagDto>? Tags { get; set; }
+        public List<TagDto>? Tags { get; set; } = new List<TagDto>();
         [Required]
-        public List<CommentDto>? Comments {get; set; }
+        public List<CommentDto>? Comments {get; set; } = new List<CommentDto>();
     }
 }

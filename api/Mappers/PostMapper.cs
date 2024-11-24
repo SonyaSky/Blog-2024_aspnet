@@ -30,5 +30,26 @@ namespace api.Mappers
             };
         }
 
+        public static PostFullDto ToPostFullDto(this Post post)
+        {
+            return new PostFullDto
+            {
+                Id = post.Id,
+                CreateTime = post.CreateTime,
+                Title = post.Title,
+                Description = post.Description,
+                ReadingTime = post.ReadingTime,
+                Image = post.Image,
+                AuthorId = post.AuthorId,
+                Author = post.Author,
+                CommunityId = post.CommunityId,
+                CommunityName = post.CommunityName,
+                AddressId = post.AddressId,
+                Likes = post.Likes,
+                HasLike = post.HasLike,
+                CommentsCount = post.CommentsCount
+            };
+        }
+
     }
 }
