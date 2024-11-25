@@ -57,6 +57,7 @@ namespace api.Controllers
 
         [HttpPost]
         [Authorize]
+        [SwaggerOperation(Summary = "Create a personal user post")]
         public async Task<IActionResult> Create([FromBody] CreatePostDto createPostDto)
         {
            try 

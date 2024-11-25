@@ -18,7 +18,8 @@ namespace api.Mappers
                 Email = userRegisterDto.Email,
                 BirthDate = userRegisterDto.BirthDate,
                 Gender = userRegisterDto.Gender,
-                PhoneNumber = userRegisterDto.PhoneNumber
+                PhoneNumber = userRegisterDto.PhoneNumber,
+                UserName = userRegisterDto.Email
             };
         }
 
@@ -30,7 +31,7 @@ namespace api.Mappers
                 CreateTime = user.CreateTime,
                 Email = user.Email,
                 BirthDate = user.BirthDate,
-                Gender = user.Gender,
+                Gender = user.Gender == 0 ? Gender.Male : Gender.Female,
                 PhoneNumber = user.PhoneNumber
             };
             

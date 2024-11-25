@@ -14,7 +14,7 @@ namespace api.Mappers
             return new AuthorDto{
                 FullName = author.FullName,
                 BirthDate = author.BirthDate,
-                Gender = author.Gender,
+                Gender = author.Gender == 0 ? Gender.Male : Gender.Female,
                 Posts = author.Posts,
                 Likes = author.Likes,
                 Created = author.Created
