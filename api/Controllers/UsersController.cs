@@ -36,7 +36,7 @@ namespace api.Controllers
         }
 
         [HttpPost("register")]
-        [SwaggerOperation(Summary = "Register new user", Description = "a")]
+        [SwaggerOperation(Summary = "Register new user")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto) {
             try 
@@ -135,8 +135,47 @@ namespace api.Controllers
             return Ok(user.ToUserDto());
         } 
 
+        [HttpPost("logout")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Log out from the system")]
+        public async Task<IActionResult> Logout()
+        {
+            // Check if the user is authenticated
+            if (!User .Identity.IsAuthenticated)
+            {
+                return Unauthorized(new Response
+                {
+                    Status = "Error",
+                    Message = "User  is not authenticated."
+                });
+            }
+
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            
+            // Check if the user exists
+            if (user == null)
+            {
+                return Unauthorized(new Response
+                {
+                    Status = "Error",
+                    Message = "User  not found."
+                });
+            }
+
+            // Sign out the user
+            await _signInManager.SignOutAsync();
+
+            return Ok(new Response
+            {
+                Status = "Success",
+                Message = "Logged out successfully."
+            });
+        }
+
         [HttpPut("profile")]
         [Authorize]
+        [SwaggerOperation(Summary = "Edit user profile")]
         public async Task<IActionResult> EditProfile([FromBody] UserEditDto userEditDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

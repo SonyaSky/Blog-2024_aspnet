@@ -108,6 +108,7 @@ namespace api.Controllers
                         return StatusCode(500, "Could not create post");
                     }
                 }
+                MakeAuthor(user);
                 return Created();
 
            } 
@@ -222,6 +223,11 @@ namespace api.Controllers
         private async Task<Tag?> GetTagAsync(Guid id)
         {
             return await _context.Tags.FirstOrDefaultAsync(t => t.Id == id);
+        }
+
+        private async Task<Author?> GetAuthorAsync(string id)
+        {
+            return await _context.Authors.FirstOrDefaultAsync(a => a.UserId == id);
         }
 
         private async Task<PostTag> CreatePostTagAsync(PostTag postTag)

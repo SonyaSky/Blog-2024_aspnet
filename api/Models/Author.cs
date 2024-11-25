@@ -17,5 +17,11 @@ namespace api.Models
         public DateTime Created { get; set; }
         public User? User { get; set; }
 
+        public Author()
+        {
+            Posts = 0;
+            Likes = 0;
+        }
+
     }
 }
