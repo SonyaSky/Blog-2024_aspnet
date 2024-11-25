@@ -182,6 +182,19 @@ namespace api.Controllers
                 PostId = postId,
                 UserId = user.Id
             };
+            var author = await GetAuthorAsync(user.Id);
+            if (author == null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = "Couldn't find author of the post in the database"
+                    }
+                );
+            }
+            author.Likes += 1;
+            post.Likes += 1;
             await CreateLikeAsync(likeModel);
             if (likeModel == null)
             {
@@ -190,6 +203,60 @@ namespace api.Controllers
             return Created();
 
         }
+
+        [HttpDelete("{postId}/like")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Delete like from a specific post")]
+        public async Task<IActionResult> DeleteLike([FromRoute] Guid postId)
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var post = _context.Posts.Find(postId);
+            if (post == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Post with id={postId} was not found in the database"
+                    }
+                );
+            }
+            var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
+            if (like == null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = "Like on this post is not yet set by this user"
+                    }
+                );
+            }
+            var author = await GetAuthorAsync(user.Id);
+            if (author == null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = "Couldn't find author of the post in the database"
+                    }
+                );
+            }
+            author.Likes -= 1;
+            post.Likes -= 1;
+            _context.Likes.Remove(like);
+            await _context.SaveChangesAsync();
+            return Ok();
+
+        }
+
+
         private async Task<Like> CreateLikeAsync(Like like)
         {
             await _context.Likes.AddAsync(like);
