@@ -28,5 +28,14 @@ namespace api.Mappers
                 IsClosed = community.IsClosed,
             };
         }
+
+        public static CommunityUserDto ToCommunityUserDto(this CommunityUser cu) 
+        {
+            return new CommunityUserDto{
+                UserId = cu.UserId,
+                CommunityId = cu.CommunityId,
+                CommunityRole = cu.CommunityRole == 0 ? CommunityRole.Administrator : CommunityRole.Subscriber
+            };
+        }
     }
 }

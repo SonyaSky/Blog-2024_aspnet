@@ -153,7 +153,6 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             
-            // Check if the user exists
             if (user == null)
             {
                 return Unauthorized(new Response
@@ -163,7 +162,6 @@ namespace api.Controllers
                 });
             }
 
-            // Sign out the user
             await _signInManager.SignOutAsync();
 
             return Ok(new Response

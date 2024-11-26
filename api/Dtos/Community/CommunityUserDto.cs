@@ -10,6 +10,6 @@ namespace api.Dtos.Community
     {
         public string UserId { get; set; }
         public Guid CommunityId { get; set; }
-        public CommunityRole Role { get; set; }
+        public CommunityRole CommunityRole { get; set; }
     }
 }
