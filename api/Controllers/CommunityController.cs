@@ -96,7 +96,7 @@ namespace api.Controllers
 
         [HttpPost("{id}/subscribe")]
         [Authorize]
-        [SwaggerOperation(Summary = "Subscribe a user to the community")]
+        [SwaggerOperation(Summary = "Subscribe user to the community")]
         public async Task<IActionResult> Subscribe([FromRoute] Guid id)
         {
             var username = User.GetUsername();
@@ -136,6 +136,46 @@ namespace api.Controllers
             };
             community.SubscribersCount += 1;
             _context.CommunityUsers.Add(communityUserModel);
+            _context.SaveChanges();
+            return Ok();
+        }
+
+        [HttpDelete("{id}/unsubscribe")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Unsubscribe user from the community")]
+        public async Task<IActionResult> Unsubscribe([FromRoute] Guid id)
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var community = await _context.Communities.FirstOrDefaultAsync(c => c.Id == id);
+            if (community == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Community with id={id} was not found in the database"
+                    }
+                );
+            }
+
+            var cu = _context.CommunityUsers.FirstOrDefault(c => c.CommunityId == id && c.UserId == user.Id && c.CommunityRole == CommunityRole.Subscriber);
+            if (cu == null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"User with id={user.Id} is not yet subscribed to the community with id={id}"
+                    }
+                );
+            }
+            community.SubscribersCount -= 1;
+            _context.CommunityUsers.Remove(cu);
             _context.SaveChanges();
             return Ok();
         }
