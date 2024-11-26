@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using api.Models;
 
-namespace api.Dtos.Community
+namespace api.Models
 {
-    public class CommunityUserDto
+    public class CommunityUser
     {
         public string UserId { get; set; }
         public Guid CommunityId { get; set; }
-        public CommunityRole Role { get; set; }
+        public CommunityRole CommunityRole {get; set; }
+        public Community Community {get; set; }
+        public User User { get; set; }
     }
 }

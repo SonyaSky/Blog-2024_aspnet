@@ -14,7 +14,7 @@ namespace api.Models
         public string Description { get; set; } = string.Empty;
         public bool IsClosed { get; set; } = false;
         public int SubscribersCount { get; set; } = 0;
-        public List<User>? Administrators { get; set; }
+        public List<CommunityUser>? CommunityUsers { get; set; } = new List<CommunityUser>();
 
         public Community() 
         {

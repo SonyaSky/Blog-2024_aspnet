@@ -17,6 +17,7 @@ namespace api.Models
         public DateTime CreateTime{ get; set; } 
         public Author? Author { get; set; }
         public List<Like>? Likes { get; set; } = new List<Like>();
+        public List<CommunityUser>? CommunityUsers { get; set; } = new List<CommunityUser>();
 
         public User()
         {

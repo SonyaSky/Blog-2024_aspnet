@@ -22,9 +22,9 @@ namespace api.Data
         public DbSet<Post> Posts {get; set; } = null!;
         public DbSet<PostTag> PostTags {get; set; } = null!;
         public DbSet<Like> Likes {get; set; } = null!;
+        public DbSet<CommunityUser> CommunityUsers {get; set; } = null!;
 
 
-        // public DbSet<User> Users {get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -72,6 +72,18 @@ namespace api.Data
             builder.Entity<Like>()
                 .HasOne(u => u.User)
                 .WithMany(u => u.Likes)
+                .HasForeignKey(p => p.UserId);
+
+            builder.Entity<CommunityUser>(x => x.HasKey(p => new {p.CommunityId, p.UserId}));
+            
+            builder.Entity<CommunityUser>()
+                .HasOne(u => u.Community)
+                .WithMany(u => u.CommunityUsers)
+                .HasForeignKey(p => p.CommunityId);
+
+            builder.Entity<CommunityUser>()
+                .HasOne(u => u.User)
+                .WithMany(u => u.CommunityUsers)
                 .HasForeignKey(p => p.UserId);
 
         }
