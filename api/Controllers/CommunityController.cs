@@ -39,16 +39,53 @@ namespace api.Controllers
             return Ok(communities);
         }
 
+        [HttpGet("my")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Get user's community list (with user's role in the community)")]
+        public async Task<IActionResult> GetUserCommunityList()
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var communityUsers = await _context.CommunityUsers
+                .Where(c => c.UserId == user.Id)
+                .Select(c => c.ToCommunityUserDto())
+                .ToListAsync();
+            return Ok(communityUsers);
+        }
+
         [HttpGet("{id}")]
         [SwaggerOperation(Summary = "Get information about community")]
         [AllowAnonymous]
-        public IActionResult GetById([FromRoute] Guid id)
+        public async Task<IActionResult> GetById([FromRoute] Guid id)
         {
             var community = _context.Communities.Find(id);
             if (community == null) {
-                return NotFound();
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Community with id={id} not found in  database"
+                    }
+                );
             }
-            return Ok(community);
+            var communityFullDto = community.ToCommunityFullDto();
+            var admins = await _context.CommunityUsers
+                .Where(a => a.CommunityId == id && a.CommunityRole == CommunityRole.Administrator)
+                .ToListAsync();
+            if (admins != null)
+            {
+                admins.ForEach(a => {
+                    var admin = _userManager.Users.FirstOrDefault(u => u.Id == a.UserId);
+                    if (admin != null){
+                        communityFullDto.Administrators.Add(admin.ToUserDto());
+                    }
+                });
+            }
+            return Ok(communityFullDto);
         }
 
         [HttpPost]
@@ -74,24 +111,6 @@ namespace api.Controllers
             _context.CommunityUsers.Add(communityUserModel);
             _context.SaveChanges();
             return Created();
-        }
-
-        [HttpGet("my")]
-        [Authorize]
-        [SwaggerOperation(Summary = "Get user's community list (with user's role in the community)")]
-        public async Task<IActionResult> GetUserCommunityList()
-        {
-            var username = User.GetUsername();
-            var user = await _userManager.FindByNameAsync(username);
-            if (user == null)
-            {
-                return Unauthorized();
-            }
-            var communityUsers = await _context.CommunityUsers
-                .Where(c => c.UserId == user.Id)
-                .Select(c => c.ToCommunityUserDto())
-                .ToListAsync();
-            return Ok(communityUsers);
         }
 
         [HttpPost("{id}/subscribe")]

@@ -37,5 +37,18 @@ namespace api.Mappers
                 CommunityRole = cu.CommunityRole == 0 ? CommunityRole.Administrator : CommunityRole.Subscriber
             };
         }
+        
+        public static CommunityFullDto ToCommunityFullDto(this Community community) 
+        {
+            return new CommunityFullDto{
+                Id = community.Id,
+                CreateTime = community.CreateTime,
+                Name = community.Name,
+                Description = community.Description,
+                IsClosed = community.IsClosed,
+                SubscribersCount = community.SubscribersCount
+            };
+        }
+
     }
 }
