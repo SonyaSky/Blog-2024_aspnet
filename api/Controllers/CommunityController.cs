@@ -113,6 +113,43 @@ namespace api.Controllers
             return Created();
         }
 
+        
+        [HttpGet("{id}/role")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Get user's greatest role in the community (or null if the user is not a member of the community)")]
+        public async Task<IActionResult> GetRole([FromRoute] Guid id)
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var community = await _context.Communities.FirstOrDefaultAsync(c => c.Id == id);
+            if (community == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Community with id={id} was not found in the database"
+                    }
+                );
+            }
+            var admin = await _context.CommunityUsers.FirstOrDefaultAsync(c => c.CommunityId == id && c.UserId == user.Id && c.CommunityRole == CommunityRole.Administrator);
+            if (admin != null)
+            {
+                return Ok("Administrator");
+            }
+            var subscriber = await _context.CommunityUsers.FirstOrDefaultAsync(c => c.CommunityId == id && c.UserId == user.Id && c.CommunityRole == CommunityRole.Subscriber);
+            if (subscriber != null)
+            {
+                return Ok("Subscriber");
+            }
+            return Ok("null");
+        }
+
+
         [HttpPost("{id}/subscribe")]
         [Authorize]
         [SwaggerOperation(Summary = "Subscribe user to the community")]
@@ -198,5 +235,7 @@ namespace api.Controllers
             _context.SaveChanges();
             return Ok();
         }
+
+        
     }
 }
