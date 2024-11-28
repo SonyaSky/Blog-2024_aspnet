@@ -140,6 +140,11 @@ namespace api.Controllers
                 .Select(t => t.Tag.ToTagDto())
                 .ToListAsync();
             newPost.Tags = tags;
+            var comments = await _context.Comments
+                .Where(c => c.PostId == id && c.ParentId == null)
+                .Select(c => c.ToCommentDto())
+                .ToListAsync();
+            newPost.Comments = comments;
             newPost.HasLike = await CheckForLike(post.Id);
             return Ok(newPost);
         }

@@ -100,5 +100,43 @@ namespace api.Controllers
             await _context.SaveChangesAsync();
             return Created();
         }
+
+        [HttpPut("comment/{id}")]
+        [SwaggerOperation(Summary = "Edit a specific comment")]
+        [Authorize]
+
+        public async Task<IActionResult> EditComment([FromRoute] Guid id, [FromBody] CommentEditDto commentEditDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
+            if (comment == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Comment with id={id} not found in database"
+                    }
+                );
+            }
+            if (new Guid(user.Id) != comment.AuthorId)
+            {
+                return StatusCode(403, new Response
+                    {
+                        Status = "Error",
+                        Message = $"The user with id={user.Id} is not the author of this comment"
+                    }
+                );
+            }
+            comment.Content = commentEditDto.Content;
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
     }
 }
