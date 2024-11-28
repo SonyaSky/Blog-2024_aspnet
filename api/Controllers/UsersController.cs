@@ -27,12 +27,14 @@ namespace api.Controllers
         private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
         private readonly SignInManager<User> _signInManager;
+        private readonly ApplicationDBContext _context;
         [ActivatorUtilitiesConstructorAttribute]
-        public UsersController(UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
+        public UsersController(ApplicationDBContext context, UserManager<User> userManager, ITokenService tokenService, SignInManager<User> signInManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _signInManager = signInManager;
+            _context = context;
         }
 
         [HttpPost("register")]
@@ -198,6 +200,11 @@ namespace api.Controllers
                 }
             }
             
+            if (user.FullName != userEditDto.FullName || user.BirthDate != userEditDto.BirthDate || user.Gender != userEditDto.Gender)
+            {
+                ChangeUserName(userEditDto, user);
+                //ещё потом в комментах надо поменять
+            }
             user.Email = userEditDto.Email;
             user.UserName = userEditDto.Email;
             user.FullName = userEditDto.FullName;
@@ -215,5 +222,23 @@ namespace api.Controllers
 
         }
 
+        private void ChangeUserName(UserEditDto newUser, User user)
+        {
+            var author = _context.Authors.FirstOrDefault(a => a.UserId == user.Id);
+            if (author != null)
+            {
+                author.FullName = newUser.FullName;
+                author.BirthDate = newUser.BirthDate;
+                author.Gender = newUser.Gender;
+            }
+            var posts = _context.Posts
+                .Where(p => p.AuthorId == new Guid(user.Id))
+                .ToList();
+            foreach (var post in posts)
+            {
+                post.Author = newUser.FullName;
+            } 
+            
+        }
     }
 }
