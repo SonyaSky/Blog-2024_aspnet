@@ -23,7 +23,7 @@ namespace api.Data
         public DbSet<PostTag> PostTags {get; set; } = null!;
         public DbSet<Like> Likes {get; set; } = null!;
         public DbSet<CommunityUser> CommunityUsers {get; set; } = null!;
-
+        public DbSet<Comment> Comments {get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -86,6 +86,12 @@ namespace api.Data
                 .WithMany(u => u.CommunityUsers)
                 .HasForeignKey(p => p.UserId);
 
+            builder.Entity<Comment>(x => x.HasKey(c => c.Id));
+            
+            builder.Entity<Comment>()
+                .HasOne(u => u.Post)
+                .WithMany(u => u.Comments)
+                .HasForeignKey(p => p.PostId);
         }
     }
 }

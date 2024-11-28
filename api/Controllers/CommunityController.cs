@@ -69,7 +69,7 @@ namespace api.Controllers
                     new Response
                     {
                         Status = "Error",
-                        Message = $"Community with id={id} not found in  database"
+                        Message = $"Community with id={id} was not found in the database"
                     }
                 );
             }
@@ -87,6 +87,58 @@ namespace api.Controllers
                 });
             }
             return Ok(communityFullDto);
+        }
+
+        [HttpGet("{id}/post")]
+        [SwaggerOperation(Summary = "Get community's posts")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPosts([FromRoute] Guid id)
+        {
+            var community = _context.Communities.Find(id);
+            if (community == null) {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Community with id={id} was not found in the database"
+                    }
+                );
+            }
+            if (community.IsClosed == true)
+            {
+                var username = User.GetUsername();
+                var user = await _userManager.FindByNameAsync(username);
+                if (user == null)
+                {
+                    return StatusCode(403, new Response
+                    { 
+                        Status = "Error", 
+                        Message = $"Access to closed community with id={id} is forbidden." 
+                    }
+                    );
+                }
+                var cu = await _context.CommunityUsers.FirstOrDefaultAsync(c => c.CommunityId == id && c.UserId == user.Id);
+                if (cu == null)
+                {
+                    return StatusCode(403, new Response
+                    { 
+                        Status = "Error", 
+                        Message = $"Access to closed community with id={id} is forbidden." 
+                    }
+                    );
+                }
+            }
+            var posts = await _context.Posts
+                .Where(p => p.CommunityId == id)
+                .ToListAsync();
+            var postDtos = new List<PostDto>();
+            foreach (var post in posts)
+            {
+                var newPost = MakePost(post);
+                newPost.HasLike = await CheckForLike(post.Id);
+                postDtos.Add(newPost);
+            }
+            return Ok(postDtos);
         }
 
         [HttpPost]
@@ -361,6 +413,40 @@ namespace api.Controllers
                 _context.Authors.Add(newAuthor);
                 _context.SaveChanges();
             }
+        }
+
+        private async Task<bool> CheckForLike(Guid postId)
+        {
+
+            if (User.Identity.IsAuthenticated)
+            {
+                var username = User.GetUsername();
+                if (!string.IsNullOrEmpty(username))
+                {
+                    var user = await _userManager.FindByNameAsync(username);
+                    if (user != null)
+                    {
+                        var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
+                        if (like != null)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        private PostDto MakePost(Post post)
+        {
+            var newPost = post.ToPostDto();
+            var tags = _context.PostTags
+                .Where(t => t.PostId == post.Id)
+                .Select(t => t.Tag.ToTagDto())
+                .ToList();
+            newPost.Tags = tags;
+            return newPost;
         }
     }
 }

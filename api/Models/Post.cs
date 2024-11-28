@@ -23,7 +23,7 @@ namespace api.Models
         public int CommentsCount { get; set; } = 0;
         public List<PostTag> PostTags { get; set; } = new List<PostTag>();
         public List<Like> LikedBy { get; set; } = new List<Like>();
-        //public List<Comment>? Comments {get; set; }
+        public List<Comment>? Comments {get; set; } = new List<Comment>();
 
         public Post()
         {
