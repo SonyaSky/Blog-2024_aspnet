@@ -9,6 +9,7 @@ namespace api.Models
     {
         public Guid Id { get; set; }
         public Guid? ParentId { get; set; }
+        public Guid? RootId {get; set;}
         public Guid PostId { get; set; }
         public DateTime CreateTime { get; set; }
         public string Content { get; set; }

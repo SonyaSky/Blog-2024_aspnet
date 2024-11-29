@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using api.Data;
 using api.Dtos.Comment;
 using api.Extensions;
+using api.Mappers;
 using api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -26,12 +27,46 @@ namespace api.Controllers
             _userManager = userManager;
         }
 
-        [HttpGet("comment")]
+        [HttpGet("comment/all")]
         [SwaggerOperation(Summary = "Get ")]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll() 
         {
             var comments = await _context.Comments.ToListAsync();
+
+            return Ok(comments);
+        }
+
+        [HttpGet("comment/{id}/tree")]
+        [SwaggerOperation(Summary = "Get all nested comments (replies)")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetTree([FromRoute] Guid id) 
+        {
+            var parent = await _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
+            if (parent == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Comment with id={id} was not found in the database"
+                    }
+                );
+            }
+            if (parent.RootId != null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Comment with id={id} is not a root element"
+                    }
+                );
+            }
+            var comments = await _context.Comments
+                .Where(c => c.RootId == id)
+                .Select(c => c.ToCommentDto())
+                .ToListAsync();
 
             return Ok(comments);
         }
@@ -72,6 +107,7 @@ namespace api.Controllers
                     );
                 }
             }
+            Guid? root = null;
             if (createCommentDto.ParentId != null)
             {
                 var parent = await _context.Comments.FirstOrDefaultAsync(c => c.Id == createCommentDto.ParentId);
@@ -86,6 +122,14 @@ namespace api.Controllers
                     );
                 }
                 parent.SubComments += 1;
+                if (parent.RootId == null)
+                {
+                    root = parent.Id;
+                }
+                else
+                {
+                    root = parent.RootId;
+                }
             }
             var newComment = new Comment
             {
@@ -93,7 +137,8 @@ namespace api.Controllers
                 PostId = id,
                 Content = createCommentDto.Content,
                 AuthorId = new Guid(user.Id),
-                AuthorName = user.FullName
+                AuthorName = user.FullName,
+                RootId = root
             };
             post.CommentsCount += 1;
             await _context.Comments.AddAsync(newComment);
@@ -135,6 +180,7 @@ namespace api.Controllers
                 );
             }
             comment.Content = commentEditDto.Content;
+            comment.ModifiedDate = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return Ok();
         }
