@@ -27,11 +27,29 @@ namespace api.Controllers
             _userManager = userManager;
         }
 
+        // [HttpGet]
+        // [SwaggerOperation(Summary = "Get list of available posts")]
+        // public async Task<IActionResult> GetAll() 
+        // {
+        //     var posts = await _context.Posts.ToListAsync();
+
+        //     var postDtos = new List<PostDto>();
+        //     foreach (var post in posts)
+        //     {
+        //         var newPost = MakePost(post);
+        //         newPost.HasLike = await CheckForLike(post.Id);
+        //         postDtos.Add(newPost);
+        //     }
+
+        //     return Ok(postDtos);
+        // }
+
         [HttpGet]
         [SwaggerOperation(Summary = "Get list of available posts")]
-        public async Task<IActionResult> GetAll() 
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAll([FromQuery] QueryObject query) 
         {
-            var posts = await _context.Posts.ToListAsync();
+            var posts = await GetPostsAsync(query);
 
             var postDtos = new List<PostDto>();
             foreach (var post in posts)
@@ -43,6 +61,76 @@ namespace api.Controllers
 
             return Ok(postDtos);
         }
+        private async Task<List<Post>> GetPostsAsync(QueryObject query)
+        {
+            var posts = _context.Posts.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(query.Author))
+            {
+                posts = posts.Where(p => p.Author.Contains(query.Author));
+            }
+            if (query.Min.HasValue)
+            {
+                posts = posts.Where(p => p.ReadingTime >= query.Min);
+            }
+            if (query.Max.HasValue)
+            {
+                posts = posts.Where(p => p.ReadingTime <= query.Max);
+            }
+            if (query.OnlyMyCommunities.HasValue)
+            {
+                if (User.Identity.IsAuthenticated)
+                {
+                    var username = User.GetUsername();
+                    var user = await _userManager.FindByNameAsync(username);
+                    if (user == null)
+                    {        
+                        return new List<Post>();
+                    }
+                    if (query.OnlyMyCommunities == true)
+                    {
+                        var userCommunities = await CommunitiesAsync(user.Id);
+                        if (userCommunities == null)
+                        {
+                            return new List<Post>();
+                        }
+                        posts = posts.Where(p => p.CommunityId.HasValue && userCommunities.Contains(p.CommunityId.Value));
+                    }
+                } else 
+                {
+                    return new List<Post>();
+                }
+
+            }
+            if (query.Sorting.HasValue)
+            {
+                if (query.Sorting == PostSorting.LikeAsc) 
+                {
+                    posts = posts.OrderBy(p => p.Likes);
+                }
+                if (query.Sorting == PostSorting.LikeDesc) 
+                {
+                    posts = posts.OrderByDescending(p => p.Likes);
+                }
+                if (query.Sorting == PostSorting.CreateAsc) 
+                {
+                    posts = posts.OrderBy(p => p.CreateTime);
+                }
+                if (query.Sorting == PostSorting.CreateDesc) 
+                {
+                    posts = posts.OrderByDescending(p => p.CreateTime);
+                }
+            }
+            return await posts.ToListAsync();
+
+        }
+
+        private async Task<List<Guid>> CommunitiesAsync(string userId)
+        {
+            return await _context.CommunityUsers
+                .Where(cu => cu.UserId == userId)
+                .Select(cu => cu.CommunityId)
+                .ToListAsync();
+            }
 
         private PostDto MakePost(Post post)
         {
@@ -150,10 +238,10 @@ namespace api.Controllers
         }
 
 
-        [HttpPost("{postId}/like")]
+        [HttpPost("{id}/like")]
         [Authorize]
         [SwaggerOperation(Summary = "Add like to a specific post")]
-        public async Task<IActionResult> AddLike([FromRoute] Guid postId)
+        public async Task<IActionResult> AddLike([FromRoute] Guid id)
         {
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
@@ -161,18 +249,18 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
-            var post = _context.Posts.Find(postId);
+            var post = _context.Posts.Find(id);
             if (post == null)
             {
                 return NotFound(
                     new Response
                     {
                         Status = "Error",
-                        Message = $"Post with id={postId} was not found in the database"
+                        Message = $"Post with id={id} was not found in the database"
                     }
                 );
             }
-            var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
+            var like = _context.Likes.FirstOrDefault(l => l.PostId == id && l.UserId == user.Id);
             if (like != null)
             {
                 return BadRequest(
@@ -185,7 +273,7 @@ namespace api.Controllers
             }
             var likeModel = new Like
             {
-                PostId = postId,
+                PostId = id,
                 UserId = user.Id
             };
             var author = await GetAuthorAsync(user.Id);
@@ -210,10 +298,10 @@ namespace api.Controllers
 
         }
 
-        [HttpDelete("{postId}/like")]
+        [HttpDelete("{id}/like")]
         [Authorize]
         [SwaggerOperation(Summary = "Delete like from a specific post")]
-        public async Task<IActionResult> DeleteLike([FromRoute] Guid postId)
+        public async Task<IActionResult> DeleteLike([FromRoute] Guid id)
         {
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
@@ -221,18 +309,18 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
-            var post = _context.Posts.Find(postId);
+            var post = _context.Posts.Find(id);
             if (post == null)
             {
                 return NotFound(
                     new Response
                     {
                         Status = "Error",
-                        Message = $"Post with id={postId} was not found in the database"
+                        Message = $"Post with id={id} was not found in the database"
                     }
                 );
             }
-            var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
+            var like = _context.Likes.FirstOrDefault(l => l.PostId == id && l.UserId == user.Id);
             if (like == null)
             {
                 return BadRequest(
