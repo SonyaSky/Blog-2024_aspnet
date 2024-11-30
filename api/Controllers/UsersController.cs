@@ -231,13 +231,23 @@ namespace api.Controllers
                 author.BirthDate = newUser.BirthDate;
                 author.Gender = newUser.Gender;
             }
-            var posts = _context.Posts
-                .Where(p => p.AuthorId == new Guid(user.Id))
-                .ToList();
-            foreach (var post in posts)
+            if (newUser.FullName != user.FullName) 
             {
-                post.Author = newUser.FullName;
-            } 
+                var posts = _context.Posts
+                    .Where(p => p.AuthorId == new Guid(user.Id))
+                    .ToList();
+                foreach (var post in posts)
+                {
+                    post.Author = newUser.FullName;
+                }
+                var comments = _context.Comments
+                    .Where(c => c.AuthorId == new Guid(user.Id))
+                    .ToList();
+                foreach (var comment in comments)
+                {
+                    comment.AuthorName = newUser.FullName;
+                }   
+            }
             
         }
     }

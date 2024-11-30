@@ -149,7 +149,6 @@ namespace api.Controllers
         [HttpPut("comment/{id}")]
         [SwaggerOperation(Summary = "Edit a specific comment")]
         [Authorize]
-
         public async Task<IActionResult> EditComment([FromRoute] Guid id, [FromBody] CommentEditDto commentEditDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -179,8 +178,86 @@ namespace api.Controllers
                     }
                 );
             }
+            if (comment.DeleteDate != null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Comment with id={id} is deleted"
+                    }
+                );
+            }
             comment.Content = commentEditDto.Content;
             comment.ModifiedDate = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpDelete("comment/{id}")]
+        [SwaggerOperation(Summary = "Delete a specific comment")]
+        [Authorize]
+        public async Task<IActionResult> DeleteComment([FromRoute] Guid id)
+        {
+            var username = User.GetUsername();
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
+            if (comment == null)
+            {
+                return NotFound(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Comment with id={id} not found in database"
+                    }
+                );
+            }
+            if (new Guid(user.Id) != comment.AuthorId)
+            {
+                return StatusCode(403, new Response
+                    {
+                        Status = "Error",
+                        Message = $"The user with id={user.Id} is not the author of this comment"
+                    }
+                );
+            }
+            if (comment.DeleteDate != null)
+            {
+                return BadRequest(
+                    new Response
+                    {
+                        Status = "Error",
+                        Message = $"Comment with id={id} is already deleted"
+                    }
+                );
+                //или можно вернуть OK() как в сваггере
+            }
+            if (comment.SubComments != 0)
+            {
+                comment.ModifiedDate = DateTime.UtcNow;
+                comment.DeleteDate = DateTime.UtcNow;
+                comment.Content = "";
+            } else
+            {
+                if (comment.ParentId != null)
+                {
+                    var parent = await _context.Comments.FindAsync(comment.ParentId);
+                    if (parent != null)
+                    {
+                        parent.SubComments -= 1;
+                    }
+                }
+                var post = await _context.Posts.FindAsync(comment.PostId);
+                if (post != null)
+                {
+                    post.CommentsCount -=1;
+                }
+                _context.Comments.Remove(comment);
+            }
             await _context.SaveChangesAsync();
             return Ok();
         }
