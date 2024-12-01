@@ -8,7 +8,7 @@ namespace api.Dtos.Post
 {
     public class PostPagedListDto
     {
-        public List<PostDto>? Posts { get; set; }
-        public PageInfoModel? Pagination { get; set; }
+        public List<PostDto>? Posts { get; set; } = new List<PostDto>();
+        public PageInfoModel? Pagination { get; set; } = new PageInfoModel();
     }
 }

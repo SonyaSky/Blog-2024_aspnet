@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Formats.Tar;
 using System.Linq;
 using System.Threading.Tasks;
 using api.Data;
@@ -49,21 +50,52 @@ namespace api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] QueryObject query) 
         {
+            if (query.Tags.Count != 0)
+            {
+                foreach (var id in query.Tags)
+                {
+                    var tag = await GetTagAsync(id);
+                    if (tag == null)
+                    {
+                        return BadRequest(
+                            new Response
+                            {
+                                Status = "Error",
+                                Message = $"Tag with id={id} was not found in the database"
+                            }
+                        );
+                    }
+                }
+            }
             var posts = await GetPostsAsync(query);
-
-            var postDtos = new List<PostDto>();
-            foreach (var post in posts)
+            var postDtos = new PostPagedListDto();
+            foreach (var post in posts.Posts)
             {
                 var newPost = MakePost(post);
                 newPost.HasLike = await CheckForLike(post.Id);
-                postDtos.Add(newPost);
+                postDtos.Posts.Add(newPost);
             }
+            postDtos.Pagination = posts.Pagination;
 
             return Ok(postDtos);
         }
-        private async Task<List<Post>> GetPostsAsync(QueryObject query)
+        private async Task<PostPagedList> GetPostsAsync(QueryObject query)
         {
             var posts = _context.Posts.AsQueryable();
+            var postPagedList = new PostPagedList();
+            postPagedList.Pagination.Size = query.Size;
+            postPagedList.Pagination.Count = 0;
+            postPagedList.Pagination.Current = query.Page;
+            if (query.Tags.Count != 0)
+            {
+                var postIdsWithTags = await _context.PostTags
+                    .Where(pt => query.Tags.Contains(pt.TagId))
+                    .Select(pt => pt.PostId)
+                    .Distinct()
+                    .ToListAsync();
+
+                posts = posts.Where(p => postIdsWithTags.Contains(p.Id));
+            }
             if (!string.IsNullOrWhiteSpace(query.Author))
             {
                 posts = posts.Where(p => p.Author.Contains(query.Author));
@@ -82,24 +114,16 @@ namespace api.Controllers
                 {
                     var username = User.GetUsername();
                     var user = await _userManager.FindByNameAsync(username);
-                    if (user == null)
-                    {        
-                        return new List<Post>();
-                    }
-                    if (query.OnlyMyCommunities == true)
+                    if (query.OnlyMyCommunities == true && user != null)
                     {
                         var userCommunities = await CommunitiesAsync(user.Id);
                         if (userCommunities == null)
                         {
-                            return new List<Post>();
+                            return postPagedList;
                         }
                         posts = posts.Where(p => p.CommunityId.HasValue && userCommunities.Contains(p.CommunityId.Value));
                     }
-                } else 
-                {
-                    return new List<Post>();
                 }
-
             }
             if (query.Sorting.HasValue)
             {
@@ -120,8 +144,11 @@ namespace api.Controllers
                     posts = posts.OrderByDescending(p => p.CreateTime);
                 }
             }
-            return await posts.ToListAsync();
-
+            var count = await posts.CountAsync();
+            var skipNumber = (query.Page - 1) * query.Size;
+            postPagedList.Posts = await posts.Skip(skipNumber).Take(query.Size).ToListAsync();
+            postPagedList.Pagination.Count = (count + query.Size - 1) / query.Size;
+            return postPagedList;
         }
 
         private async Task<List<Guid>> CommunitiesAsync(string userId)
