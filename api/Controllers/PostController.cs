@@ -8,6 +8,7 @@ using api.Dtos.Post;
 using api.Extensions;
 using api.Mappers;
 using api.Models;
+using api.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -108,12 +109,39 @@ namespace api.Controllers
             {
                 posts = posts.Where(p => p.ReadingTime <= query.Max);
             }
-            if (query.OnlyMyCommunities.HasValue)
+            // if (query.OnlyMyCommunities.HasValue)
+            // {
+            //     if (User.Identity.IsAuthenticated)
+            //     {
+            //         var username = User.GetUsername();
+            //         var user = await _userManager.FindByNameAsync(username);
+            //         if (query.OnlyMyCommunities == true && user != null)
+            //         {
+            //             var userCommunities = await CommunitiesAsync(user.Id);
+            //             if (userCommunities == null)
+            //             {
+            //                 return postPagedList;
+            //             }
+            //             posts = posts.Where(p => p.CommunityId.HasValue && userCommunities.Contains(p.CommunityId.Value));
+            //         }
+            //     }
+            // }
+            if (User.Identity.IsAuthenticated)
             {
-                if (User.Identity.IsAuthenticated)
+                var username = User.GetUsername();
+                var user = await _userManager.FindByNameAsync(username);
+                var allowed = new List<Guid>();
+                if (user == null)
                 {
-                    var username = User.GetUsername();
-                    var user = await _userManager.FindByNameAsync(username);
+                    allowed = await GetAllowedCommunities();
+                }
+                else
+                {
+                    allowed = await GetAllowedCommunities(user.Id);
+                }
+                posts = posts.Where(p => p.CommunityId == null || allowed.Contains(p.CommunityId.Value));
+                if (query.OnlyMyCommunities.HasValue)
+                {
                     if (query.OnlyMyCommunities == true && user != null)
                     {
                         var userCommunities = await CommunitiesAsync(user.Id);
@@ -124,6 +152,10 @@ namespace api.Controllers
                         posts = posts.Where(p => p.CommunityId.HasValue && userCommunities.Contains(p.CommunityId.Value));
                     }
                 }
+            } else
+            {
+                var allowed = await GetAllowedCommunities();
+                posts = posts.Where(p => p.CommunityId == null || allowed.Contains(p.CommunityId.Value));
             }
             if (query.Sorting.HasValue)
             {
@@ -157,7 +189,27 @@ namespace api.Controllers
                 .Where(cu => cu.UserId == userId)
                 .Select(cu => cu.CommunityId)
                 .ToListAsync();
+        }
+
+        private async Task<List<Guid>> GetAllowedCommunities(string? id = null)
+        {
+            var allowed = await _context.Communities
+                .Where(c => c.IsClosed == false)
+                .Select(c => c.Id)
+                .ToListAsync();
+            if (id == null)
+            {
+                return allowed;
             }
+            else 
+            {
+                var cu = await _context.CommunityUsers
+                    .Where(c => c.UserId == id)
+                    .Select(c => c.CommunityId)
+                    .ToListAsync();
+                return allowed.Union(cu).ToList();
+            }
+        }
 
         private PostDto MakePost(Post post)
         {

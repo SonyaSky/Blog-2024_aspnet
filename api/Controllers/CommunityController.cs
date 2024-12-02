@@ -8,6 +8,7 @@ using api.Dtos.Post;
 using api.Extensions;
 using api.Mappers;
 using api.Models;
+using api.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -92,7 +93,7 @@ namespace api.Controllers
         [HttpGet("{id}/post")]
         [SwaggerOperation(Summary = "Get community's posts")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetPosts([FromRoute] Guid id)
+        public async Task<IActionResult> GetPosts([FromRoute] Guid id, [FromQuery] SmallQueryObject query)
         {
             var community = _context.Communities.Find(id);
             if (community == null) {
@@ -106,8 +107,12 @@ namespace api.Controllers
             }
             if (community.IsClosed == true)
             {
-                var username = User.GetUsername();
-                var user = await _userManager.FindByNameAsync(username);
+                User? user = null;
+                if (User.Identity.IsAuthenticated)
+                {
+                    var username = User.GetUsername();
+                    user = await _userManager.FindByNameAsync(username);
+                }
                 if (user == null)
                 {
                     return StatusCode(403, new Response
@@ -128,17 +133,79 @@ namespace api.Controllers
                     );
                 }
             }
-            var posts = await _context.Posts
-                .Where(p => p.CommunityId == id)
-                .ToListAsync();
-            var postDtos = new List<PostDto>();
-            foreach (var post in posts)
+            if (query.Tags.Count != 0)
+            {
+                foreach (var tagId in query.Tags)
+                {
+                    var tag = await GetTagAsync(tagId);
+                    if (tag == null)
+                    {
+                        return BadRequest(
+                            new Response
+                            {
+                                Status = "Error",
+                                Message = $"Tag with id={tagId} was not found in the database"
+                            }
+                        );
+                    }
+                }
+            }
+            var posts = await GetPostsAsync(query, id);
+            var postDtos = new PostPagedListDto();
+            foreach (var post in posts.Posts)
             {
                 var newPost = MakePost(post);
                 newPost.HasLike = await CheckForLike(post.Id);
-                postDtos.Add(newPost);
+                postDtos.Posts.Add(newPost);
             }
+            postDtos.Pagination = posts.Pagination;
+
             return Ok(postDtos);
+        }
+
+        private async Task<PostPagedList> GetPostsAsync(SmallQueryObject query, Guid id)
+        {
+            var posts = _context.Posts
+                .Where(p => p.CommunityId == id)
+                .AsQueryable();
+            var postPagedList = new PostPagedList();
+            postPagedList.Pagination.Size = query.Size;
+            postPagedList.Pagination.Count = 0;
+            postPagedList.Pagination.Current = query.Page;
+            if (query.Tags.Count != 0)
+            {
+                var postIdsWithTags = await _context.PostTags
+                    .Where(pt => query.Tags.Contains(pt.TagId))
+                    .Select(pt => pt.PostId)
+                    .Distinct()
+                    .ToListAsync();
+
+                posts = posts.Where(p => postIdsWithTags.Contains(p.Id));
+            }
+            if (query.Sorting.HasValue)
+            {
+                if (query.Sorting == PostSorting.LikeAsc) 
+                {
+                    posts = posts.OrderBy(p => p.Likes);
+                }
+                if (query.Sorting == PostSorting.LikeDesc) 
+                {
+                    posts = posts.OrderByDescending(p => p.Likes);
+                }
+                if (query.Sorting == PostSorting.CreateAsc) 
+                {
+                    posts = posts.OrderBy(p => p.CreateTime);
+                }
+                if (query.Sorting == PostSorting.CreateDesc) 
+                {
+                    posts = posts.OrderByDescending(p => p.CreateTime);
+                }
+            }
+            var count = await posts.CountAsync();
+            var skipNumber = (query.Page - 1) * query.Size;
+            postPagedList.Posts = await posts.Skip(skipNumber).Take(query.Size).ToListAsync();
+            postPagedList.Pagination.Count = (count + query.Size - 1) / query.Size;
+            return postPagedList;
         }
 
         [HttpPost]

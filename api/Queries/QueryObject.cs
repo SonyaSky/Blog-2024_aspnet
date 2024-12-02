@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using api.Models;
+using System.Collections.Generic;
 using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel;
 
-namespace api.Models
+namespace api.Queries
 {
     public class QueryObject
     {
@@ -21,8 +24,10 @@ namespace api.Models
         [SwaggerSchema("flag to display posts only from communities the user is subscribed to")]
         public bool? OnlyMyCommunities { get; set; } = false;
         [SwaggerSchema("page number")]
+        [DefaultValue(1)]
         public int Page {get; set; } = 1;
         [SwaggerSchema("required number of elements per page")]
+        [DefaultValue(5)]
         public int Size { get; set; } = 5;
     }
 }
