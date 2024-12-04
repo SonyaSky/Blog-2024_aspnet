@@ -9,5 +9,7 @@ namespace api.Interfaces
     public interface ITokenService
     {
         string CreateToken(User user);
+
+        Task<bool> IsTokenValid(string token, string username);
     }
 }

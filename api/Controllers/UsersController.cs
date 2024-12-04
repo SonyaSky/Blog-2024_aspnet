@@ -55,7 +55,14 @@ namespace api.Controllers
                         }
                     );
                 }
-
+                if (registerDto.BirthDate > DateTime.Today)
+                {
+                    return BadRequest(new Response
+                    {
+                        Status = "Error",
+                        Message = "Birth date can't be later than today"
+                    });
+                }
                 var user = registerDto.ToUserFromRegisterDto();
                 var createdUser = await _userManager.CreateAsync(user, registerDto.Password);
                 if (createdUser.Succeeded)
@@ -134,6 +141,12 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token, username);
+            if (!isValidToken)
+            {
+                return Unauthorized();
+            }
             return Ok(user.ToUserDto());
         } 
 
@@ -142,14 +155,9 @@ namespace api.Controllers
         [SwaggerOperation(Summary = "Log out from the system")]
         public async Task<IActionResult> Logout()
         {
-            // Check if the user is authenticated
-            if (!User .Identity.IsAuthenticated)
+            if (!User.Identity.IsAuthenticated)
             {
-                return Unauthorized(new Response
-                {
-                    Status = "Error",
-                    Message = "User  is not authenticated."
-                });
+                return Unauthorized();
             }
 
             var username = User.GetUsername();
@@ -157,12 +165,24 @@ namespace api.Controllers
             
             if (user == null)
             {
-                return Unauthorized(new Response
-                {
-                    Status = "Error",
-                    Message = "User  not found."
-                });
+                return Unauthorized();
             }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized();
+            }
+
+            var userToken = new UserToken
+            {
+                Token = token,
+                Username = username,
+                ExpiryDate = DateTime.UtcNow.AddMinutes(60)
+            };
+
+            _context.Tokens.Add(userToken);
+            await _context.SaveChangesAsync();
 
             await _signInManager.SignOutAsync();
 
@@ -203,7 +223,6 @@ namespace api.Controllers
             if (user.FullName != userEditDto.FullName || user.BirthDate != userEditDto.BirthDate || user.Gender != userEditDto.Gender)
             {
                 ChangeUserName(userEditDto, user);
-                //ещё потом в комментах надо поменять
             }
             user.Email = userEditDto.Email;
             user.UserName = userEditDto.Email;

@@ -29,23 +29,6 @@ namespace api.Controllers
             _userManager = userManager;
         }
 
-        // [HttpGet]
-        // [SwaggerOperation(Summary = "Get list of available posts")]
-        // public async Task<IActionResult> GetAll() 
-        // {
-        //     var posts = await _context.Posts.ToListAsync();
-
-        //     var postDtos = new List<PostDto>();
-        //     foreach (var post in posts)
-        //     {
-        //         var newPost = MakePost(post);
-        //         newPost.HasLike = await CheckForLike(post.Id);
-        //         postDtos.Add(newPost);
-        //     }
-
-        //     return Ok(postDtos);
-        // }
-
         [HttpGet]
         [SwaggerOperation(Summary = "Get list of available posts")]
         [AllowAnonymous]
@@ -109,23 +92,6 @@ namespace api.Controllers
             {
                 posts = posts.Where(p => p.ReadingTime <= query.Max);
             }
-            // if (query.OnlyMyCommunities.HasValue)
-            // {
-            //     if (User.Identity.IsAuthenticated)
-            //     {
-            //         var username = User.GetUsername();
-            //         var user = await _userManager.FindByNameAsync(username);
-            //         if (query.OnlyMyCommunities == true && user != null)
-            //         {
-            //             var userCommunities = await CommunitiesAsync(user.Id);
-            //             if (userCommunities == null)
-            //             {
-            //                 return postPagedList;
-            //             }
-            //             posts = posts.Where(p => p.CommunityId.HasValue && userCommunities.Contains(p.CommunityId.Value));
-            //         }
-            //     }
-            // }
             if (User.Identity.IsAuthenticated)
             {
                 var username = User.GetUsername();
@@ -277,7 +243,7 @@ namespace api.Controllers
                     }
                 }
                 MakeAuthor(user);
-                return Created();
+                return Ok(post.Id);
 
            } 
            catch (Exception e) 
@@ -355,7 +321,7 @@ namespace api.Controllers
                 PostId = id,
                 UserId = user.Id
             };
-            var author = await GetAuthorAsync(user.Id);
+            var author = await GetAuthorAsync(post.AuthorId.ToString());
             if (author == null)
             {
                 return BadRequest(
@@ -410,7 +376,7 @@ namespace api.Controllers
                     }
                 );
             }
-            var author = await GetAuthorAsync(user.Id);
+            var author = await GetAuthorAsync(post.AuthorId.ToString());
             if (author == null)
             {
                 return BadRequest(
@@ -497,8 +463,8 @@ namespace api.Controllers
                     Created = user.CreateTime
                 };
                 _context.Authors.Add(newAuthor);
-                _context.SaveChanges();
             }
+            _context.SaveChanges();
         }
     }
 }

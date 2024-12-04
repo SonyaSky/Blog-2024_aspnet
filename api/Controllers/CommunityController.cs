@@ -230,7 +230,7 @@ namespace api.Controllers
             };
             _context.CommunityUsers.Add(communityUserModel);
             _context.SaveChanges();
-            return Created();
+            return Ok(communityModel.Id);
         }
 
         [HttpPost("{id}/post")]
@@ -310,7 +310,7 @@ namespace api.Controllers
                     }
                 }
                 MakeAuthor(user);
-                return Created();
+                return Ok(post.Id);
 
            } 
            catch (Exception e) 
@@ -478,8 +478,8 @@ namespace api.Controllers
                     Created = user.CreateTime
                 };
                 _context.Authors.Add(newAuthor);
-                _context.SaveChanges();
             }
+            _context.SaveChanges();
         }
 
         private async Task<bool> CheckForLike(Guid postId)

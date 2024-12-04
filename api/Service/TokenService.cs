@@ -5,8 +5,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using api.Data;
 using api.Interfaces;
 using api.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace api.Service
@@ -15,9 +17,11 @@ namespace api.Service
     {
         private readonly IConfiguration _config;
         private readonly SymmetricSecurityKey _key;
-        public TokenService(IConfiguration config)
+        private readonly ApplicationDBContext _context;
+        public TokenService(IConfiguration config, ApplicationDBContext context)
         {
             _config = config;
+            _context = context;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:SigningKey"]));
         }
         public string CreateToken(User user)
@@ -42,6 +46,19 @@ namespace api.Service
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        public async Task<bool> IsTokenValid(string token, string username)
+        {
+            var userToken = await _context.Tokens
+                .FirstOrDefaultAsync(t => t.Token == token);
+
+            if (userToken != null)
+            {
+                return false; 
+            }
+
+            return true;
         }
     }
 }

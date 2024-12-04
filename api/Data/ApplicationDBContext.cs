@@ -24,6 +24,7 @@ namespace api.Data
         public DbSet<Like> Likes {get; set; } = null!;
         public DbSet<CommunityUser> CommunityUsers {get; set; } = null!;
         public DbSet<Comment> Comments {get; set; } = null!;
+        public DbSet<UserToken> Tokens {get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -92,6 +93,8 @@ namespace api.Data
                 .HasOne(u => u.Post)
                 .WithMany(u => u.Comments)
                 .HasForeignKey(p => p.PostId);
+
+            builder.Entity<UserToken>(x => x.HasKey(t => t.Token));
         }
     }
 }
