@@ -142,7 +142,7 @@ namespace api.Controllers
                 return Unauthorized();
             }
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-            var isValidToken = await _tokenService.IsTokenValid(token, username);
+            var isValidToken = await _tokenService.IsTokenValid(token);
             if (!isValidToken)
             {
                 return Unauthorized();
@@ -169,7 +169,12 @@ namespace api.Controllers
             }
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-            if (string.IsNullOrEmpty(token))
+            if (token == null)
+            {
+                return Unauthorized();
+            }
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }
@@ -202,6 +207,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using api.Data;
 using api.Dtos.Post;
 using api.Extensions;
+using api.Interfaces;
 using api.Mappers;
 using api.Models;
 using api.Queries;
@@ -23,9 +24,11 @@ namespace api.Controllers
     {
         private readonly ApplicationDBContext _context;
         private readonly UserManager<User> _userManager;
-        public PostController(ApplicationDBContext context, UserManager<User> userManager)
+        private readonly ITokenService _tokenService;
+        public PostController(ApplicationDBContext context, UserManager<User> userManager, ITokenService tokenService)
         {
             _context = context;
+            _tokenService = tokenService;
             _userManager = userManager;
         }
 
@@ -96,8 +99,10 @@ namespace api.Controllers
             {
                 var username = User.GetUsername();
                 var user = await _userManager.FindByNameAsync(username);
+                var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var isValidToken = await _tokenService.IsTokenValid(token);
                 var allowed = new List<Guid>();
-                if (user == null)
+                if (user == null || !isValidToken)
                 {
                     allowed = await GetAllowedCommunities();
                 }
@@ -202,6 +207,12 @@ namespace api.Controllers
                 {
                     return Unauthorized();
                 }
+                var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var isValidToken = await _tokenService.IsTokenValid(token);
+                if (!isValidToken)
+                {
+                    return Unauthorized();
+                }
                 foreach (var tagId in createPostDto.Tags)
                 {
                     var tag = await GetTagAsync(tagId); 
@@ -267,6 +278,49 @@ namespace api.Controllers
                     }
                 );
             }
+            if (post.CommunityId != null)
+            {
+                var community = await _context.Communities.FirstOrDefaultAsync(c => c.Id == post.CommunityId);
+                if (community != null && community.IsClosed)
+                {
+                    User? user = null;
+                    if (User.Identity.IsAuthenticated)
+                    {
+                        var username = User.GetUsername();
+                        user = await _userManager.FindByNameAsync(username);
+                    }
+                    if (user == null)
+                    {
+                        return StatusCode(403, new Response
+                        { 
+                            Status = "Error", 
+                            Message = $"Access to closed community with id={id} is forbidden." 
+                        }
+                        );
+                    }
+                    var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                    var isValidToken = await _tokenService.IsTokenValid(token);
+                    if (!isValidToken)
+                    {
+                        return StatusCode(403, new Response
+                        { 
+                            Status = "Error", 
+                            Message = $"Access to closed community with id={id} is forbidden." 
+                        }
+                        );
+                    }
+                    var cu = await _context.CommunityUsers.FirstOrDefaultAsync(c => c.CommunityId == post.CommunityId && c.UserId == user.Id);
+                    if (cu == null)
+                    {
+                        return StatusCode(403, new Response
+                        { 
+                            Status = "Error", 
+                            Message = $"Access to closed community with id={id} is forbidden." 
+                        }
+                        );
+                    }
+                }
+            }
             var newPost = post.ToPostFullDto();
             var tags = await _context.PostTags
                 .Where(t => t.PostId == id)
@@ -291,6 +345,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }
@@ -354,6 +414,12 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
+            {
+                return Unauthorized();
+            }
             var post = _context.Posts.Find(id);
             if (post == null)
             {
@@ -406,7 +472,7 @@ namespace api.Controllers
         private async Task<bool> CheckForLike(Guid postId)
         {
 
-            if (User.Identity.IsAuthenticated)
+            if (User .Identity.IsAuthenticated)
             {
                 var username = User.GetUsername();
                 if (!string.IsNullOrEmpty(username))
@@ -414,13 +480,15 @@ namespace api.Controllers
                     var user = await _userManager.FindByNameAsync(username);
                     if (user != null)
                     {
-                        var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
-                        if (like != null)
+                        var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                        var isValidToken = await _tokenService.IsTokenValid(token);
+                        if (isValidToken)
                         {
-                            return true;
+                            var like = await _context.Likes
+                                .FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == user.Id);
+                            return like != null;
                         }
                     }
-                    return false;
                 }
             }
             return false;

@@ -48,7 +48,7 @@ namespace api.Service
             return tokenHandler.WriteToken(token);
         }
 
-        public async Task<bool> IsTokenValid(string token, string username)
+        public async Task<bool> IsTokenValid(string token)
         {
             var userToken = await _context.Tokens
                 .FirstOrDefaultAsync(t => t.Token == token);

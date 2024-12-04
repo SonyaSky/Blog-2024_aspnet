@@ -6,6 +6,7 @@ using api.Data;
 using api.Dtos.Community;
 using api.Dtos.Post;
 using api.Extensions;
+using api.Interfaces;
 using api.Mappers;
 using api.Models;
 using api.Queries;
@@ -25,10 +26,12 @@ namespace api.Controllers
     {
         private readonly ApplicationDBContext _context;
         private readonly UserManager<User> _userManager;
-        public CommunityController(ApplicationDBContext context, UserManager<User> userManager)
+        private readonly ITokenService _tokenService;
+        public CommunityController(ApplicationDBContext context, UserManager<User> userManager, ITokenService tokenService)
         {
             _context = context;
             _userManager = userManager;
+            _tokenService = tokenService;
         }
 
         [HttpGet]
@@ -49,6 +52,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }
@@ -114,6 +123,17 @@ namespace api.Controllers
                     user = await _userManager.FindByNameAsync(username);
                 }
                 if (user == null)
+                {
+                    return StatusCode(403, new Response
+                    { 
+                        Status = "Error", 
+                        Message = $"Access to closed community with id={id} is forbidden." 
+                    }
+                    );
+                }
+                var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var isValidToken = await _tokenService.IsTokenValid(token);
+                if (!isValidToken)
                 {
                     return StatusCode(403, new Response
                     { 
@@ -220,6 +240,12 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
+            {
+                return Unauthorized();
+            }
             var communityModel = communityCreateDto.ToCommunityFromCreateDto();
             _context.Communities.Add(communityModel);
             var communityUserModel = new CommunityUser
@@ -244,6 +270,12 @@ namespace api.Controllers
                 var username = User.GetUsername();
                 var user = await _userManager.FindByNameAsync(username);
                 if (user == null)
+                {
+                    return Unauthorized();
+                }
+                var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var isValidToken = await _tokenService.IsTokenValid(token);
+                if (!isValidToken)
                 {
                     return Unauthorized();
                 }
@@ -330,6 +362,12 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
+            {
+                return Unauthorized();
+            }
             var community = await _context.Communities.FirstOrDefaultAsync(c => c.Id == id);
             if (community == null)
             {
@@ -363,6 +401,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }
@@ -409,6 +453,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }
@@ -485,7 +535,7 @@ namespace api.Controllers
         private async Task<bool> CheckForLike(Guid postId)
         {
 
-            if (User.Identity.IsAuthenticated)
+            if (User .Identity.IsAuthenticated)
             {
                 var username = User.GetUsername();
                 if (!string.IsNullOrEmpty(username))
@@ -493,13 +543,15 @@ namespace api.Controllers
                     var user = await _userManager.FindByNameAsync(username);
                     if (user != null)
                     {
-                        var like = _context.Likes.FirstOrDefault(l => l.PostId == postId && l.UserId == user.Id);
-                        if (like != null)
+                        var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                        var isValidToken = await _tokenService.IsTokenValid(token);
+                        if (isValidToken)
                         {
-                            return true;
+                            var like = await _context.Likes
+                                .FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == user.Id);
+                            return like != null;
                         }
                     }
-                    return false;
                 }
             }
             return false;

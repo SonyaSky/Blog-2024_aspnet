@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using api.Data;
 using api.Dtos.Comment;
 using api.Extensions;
+using api.Interfaces;
 using api.Mappers;
 using api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -21,9 +22,11 @@ namespace api.Controllers
     {
         private readonly ApplicationDBContext _context;
         private readonly UserManager<User> _userManager;
-        public CommentController(ApplicationDBContext context, UserManager<User> userManager)
+        private readonly ITokenService _tokenService;
+        public CommentController(ApplicationDBContext context, UserManager<User> userManager, ITokenService tokenService)
         {
             _context = context;
+            _tokenService = tokenService;
             _userManager = userManager;
         }
 
@@ -80,6 +83,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }
@@ -158,6 +167,12 @@ namespace api.Controllers
             {
                 return Unauthorized();
             }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
+            {
+                return Unauthorized();
+            }
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
             if (comment == null)
             {
@@ -202,6 +217,12 @@ namespace api.Controllers
             var username = User.GetUsername();
             var user = await _userManager.FindByNameAsync(username);
             if (user == null)
+            {
+                return Unauthorized();
+            }
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var isValidToken = await _tokenService.IsTokenValid(token);
+            if (!isValidToken)
             {
                 return Unauthorized();
             }

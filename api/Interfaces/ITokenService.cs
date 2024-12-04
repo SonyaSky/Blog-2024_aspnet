@@ -10,6 +10,6 @@ namespace api.Interfaces
     {
         string CreateToken(User user);
 
-        Task<bool> IsTokenValid(string token, string username);
+        Task<bool> IsTokenValid(string token);
     }
 }
