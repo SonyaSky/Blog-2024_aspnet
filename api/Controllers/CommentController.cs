@@ -105,15 +105,19 @@ namespace api.Controllers
             }
             if (post.CommunityId != null)
             {
-                var cu = _context.CommunityUsers.FirstOrDefault(c => c.CommunityId == post.CommunityId && c.UserId == user.Id);
-                if (cu == null)
-                {
-                    return StatusCode(403, new Response
-                        {
-                            Status = "Error",
-                            Message = $"Access to closed community post with id={id} is forbidden for user Id={user.Id}"
-                        }
-                    );
+                var c = await _context.Communities.FirstOrDefaultAsync(c => c.Id == post.CommunityId);
+                if (c != null && c.IsClosed == true)
+                    {
+                        var cu = await _context.CommunityUsers.FirstOrDefaultAsync(c => c.CommunityId == post.CommunityId && c.UserId == user.Id);
+                    if (cu == null)
+                    {
+                        return StatusCode(403, new Response
+                            {
+                                Status = "Error",
+                                Message = $"Access to closed community post with id={id} is forbidden for user Id={user.Id}"
+                            }
+                        );
+                    }
                 }
             }
             Guid? root = null;
