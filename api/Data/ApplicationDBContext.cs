@@ -25,6 +25,9 @@ namespace api.Data
         public DbSet<CommunityUser> CommunityUsers {get; set; } = null!;
         public DbSet<Comment> Comments {get; set; } = null!;
         public DbSet<UserToken> Tokens {get; set; } = null!;
+        public DbSet<AddressElement> AddressElements {get; set; } = null!;
+        public DbSet<Hierarchy> Hierarchies {get; set; } = null!;
+        public DbSet<House> Houses {get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -95,6 +98,24 @@ namespace api.Data
                 .HasForeignKey(p => p.PostId);
 
             builder.Entity<UserToken>(x => x.HasKey(t => t.Token));
+
+            builder.Entity<AddressElement>(entity =>
+            {
+                entity.ToTable("AddressElement"); 
+                entity.HasKey(e => e.Id); 
+            });
+
+            builder.Entity<Hierarchy>(entity =>
+            {
+                entity.ToTable("Hierarchy"); 
+                entity.HasKey(e => e.Id); 
+            });
+
+            builder.Entity<House>(entity =>
+            {
+                entity.ToTable("House"); 
+                entity.HasKey(e => e.Id); 
+            });
         }
     }
 }

@@ -7,6 +7,7 @@ using api.Mappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace api.Controllers
@@ -23,10 +24,10 @@ namespace api.Controllers
 
         [HttpGet("list")]
         [AllowAnonymous]
-        public IActionResult GetAll() 
+        public async Task<IActionResult> GetAll() 
         {
-            var authors = _context.Authors
-            .Select(t => t.ToAuthorDto()).ToList();
+            var authors = await _context.Authors
+            .Select(t => t.ToAuthorDto()).ToListAsync();
             return Ok(authors);
         }
     }
