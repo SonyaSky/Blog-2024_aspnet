@@ -30,15 +30,15 @@ namespace api.Controllers
             _userManager = userManager;
         }
 
-        [HttpGet("comment/all")]
-        [SwaggerOperation(Summary = "Get ")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetAll() 
-        {
-            var comments = await _context.Comments.ToListAsync();
+        // [HttpGet("comment/all")]
+        // [SwaggerOperation(Summary = "Get ")]
+        // [AllowAnonymous]
+        // public async Task<IActionResult> GetAll() 
+        // {
+        //     var comments = await _context.Comments.ToListAsync();
 
-            return Ok(comments);
-        }
+        //     return Ok(comments);
+        // }
 
         [HttpGet("comment/{id}/tree")]
         [SwaggerOperation(Summary = "Get all nested comments (replies)")]
