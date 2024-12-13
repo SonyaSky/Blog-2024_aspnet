@@ -46,7 +46,7 @@ namespace api.Controllers
 
         [HttpGet("my")]
         [Authorize]
-        [SwaggerOperation(Summary = "Get user's community list (with user's role in the community)")]
+        [SwaggerOperation(Summary = "Get user's community list (with user's greatest role in the community)")]
         public async Task<IActionResult> GetUserCommunityList()
         {
             var username = User.GetUsername();
@@ -65,6 +65,20 @@ namespace api.Controllers
                 .Where(c => c.UserId == user.Id)
                 .Select(c => c.ToCommunityUserDto())
                 .ToListAsync();
+            var subscribersToRemove = new List<CommunityUserDto>();
+            var admin = communityUsers.Where(c => c.CommunityRole == CommunityRole.Administrator);
+            foreach (var a in admin)
+            {
+                var sub = communityUsers.FirstOrDefault(c => c.CommunityId == a.CommunityId && c.CommunityRole == CommunityRole.Subscriber);
+                if (sub != null)
+                {
+                    subscribersToRemove.Add(sub); 
+                }
+            }
+            foreach (var sub in subscribersToRemove)
+            {
+                communityUsers.Remove(sub);
+            }
             return Ok(communityUsers);
         }
 

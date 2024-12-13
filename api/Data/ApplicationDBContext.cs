@@ -78,7 +78,7 @@ namespace api.Data
                 .WithMany(u => u.Likes)
                 .HasForeignKey(p => p.UserId);
 
-            builder.Entity<CommunityUser>(x => x.HasKey(p => new {p.CommunityId, p.UserId}));
+            builder.Entity<CommunityUser>(x => x.HasKey(p => new {p.CommunityId, p.UserId, p.CommunityRole}));
             
             builder.Entity<CommunityUser>()
                 .HasOne(u => u.Community)
