@@ -106,8 +106,8 @@ namespace api.Controllers
                     Message = $"Object with ObjectGuid = {objectGuid} was not found"
                 });
             }
-            var hierarchy = await _context.Hierarchies.FirstOrDefaultAsync(h => h.ObjectId == id);
-            if (hierarchy == null)
+            var hierarchies = await _context.Hierarchies.Where(h => h.ObjectId == id).ToListAsync();
+            if (hierarchies == null)
             {
                 return StatusCode(500, new Response
                 {
@@ -115,6 +115,24 @@ namespace api.Controllers
                     Message = $"Object with ObjectGuid = {objectGuid} was not found"
                 });
             }
+            var hierarchy = new Hierarchy();
+            if (hierarchies.Count() > 1)
+            {
+                hierarchy = hierarchies.FirstOrDefault(h => h.IsActive);
+                if (hierarchy == null)
+                {
+                    return StatusCode(500, new Response
+                    {
+                        Status = "Error occured",
+                        Message = $"Object with ObjectGuid = {objectGuid} was not found"
+                    });
+                }
+            }
+            else 
+            {
+                hierarchy = hierarchies[0];
+            }
+            
             int[] path = Array.ConvertAll(hierarchy.Path.Split('.'), int.Parse);
             var result = new List<SearchAddressModel>();
             foreach (var el in path)

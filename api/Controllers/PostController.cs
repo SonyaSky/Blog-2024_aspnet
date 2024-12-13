@@ -213,6 +213,16 @@ namespace api.Controllers
                 {
                     return Unauthorized();
                 }
+                if (createPostDto.AddressId != null && !AddressCheck(createPostDto.AddressId.ToString()))
+                {
+                    return BadRequest(
+                            new Response
+                            {
+                                Status = "Error",
+                                Message = $"Address was not found"
+                            }
+                        );
+                }
                 foreach (var tagId in createPostDto.Tags)
                 {
                     var tag = await GetTagAsync(tagId); 
@@ -261,6 +271,21 @@ namespace api.Controllers
            {
                 return StatusCode(500, e);
            }
+        }
+
+        private bool AddressCheck(string id)
+        {
+            var address = _context.AddressElements.FirstOrDefault(a => a.ObjectGuid == id);
+            if (address != null)
+            {
+                return true;
+            }
+            var house = _context.Houses.FirstOrDefault(a => a.ObjectGuid == id);
+            if (house != null)
+            {
+                return true;
+            }
+            return false;
         }
 
         [HttpGet("{id}")]

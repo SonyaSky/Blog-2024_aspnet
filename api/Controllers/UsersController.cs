@@ -185,7 +185,7 @@ namespace api.Controllers
                 Username = username,
                 ExpiryDate = DateTime.UtcNow.AddMinutes(60)
             };
-
+            await CleanBlackList();
             _context.Tokens.Add(userToken);
             await _context.SaveChangesAsync();
 
@@ -196,6 +196,18 @@ namespace api.Controllers
                 Status = "Success",
                 Message = "Logged out successfully."
             });
+        }
+
+        private async Task CleanBlackList()
+        {
+            var tokens = await _context.Tokens.ToListAsync();
+            foreach (var t in tokens)
+            {
+                if (t.ExpiryDate < DateTime.UtcNow)
+                {
+                    _context.Tokens.Remove(t);
+                }
+            }
         }
 
         [HttpPut("profile")]
