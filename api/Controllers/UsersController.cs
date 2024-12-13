@@ -242,7 +242,14 @@ namespace api.Controllers
                     );
                 }
             }
-            
+            if (userEditDto.BirthDate > DateTime.Today)
+            {
+                return BadRequest(new Response
+                {
+                    Status = "Error",
+                    Message = "Birth date can't be later than today"
+                });
+            }
             if (user.FullName != userEditDto.FullName || user.BirthDate != userEditDto.BirthDate || user.Gender != userEditDto.Gender)
             {
                 ChangeUserName(userEditDto, user);
